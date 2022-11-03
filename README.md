@@ -50,7 +50,7 @@ Now the docker container can be deployed anywhere.
     
 ## Monitoring:
 
-* We can monitor on a daily or weekly interval by running script or with a cron job to check whether the number of bot transaction over the interval has exceeded the threshold. This implies either our model is not performing well and needs to retrain or there is a suspicious activity occuring too frequently.
+* We can monitor on a daily or weekly interval by running script or with a cron job to check whether the number of duplicates questions are exceeding the threshold. This implies either our model is not performing well or the many duplicate questions are being asked.
 
 * Similarly we can also check for the overall latency across the interval and if the latency is not below 200ms then trigger the retraining script with new data or send an alert to retrain
 
