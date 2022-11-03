@@ -22,6 +22,7 @@ if not os.path.exists("outputs"):
     os.makedirs("outputs")
 
 logs = "logs/"
+log = logging.getLogger("qp_similarity.features")
 
 def get_train_data():
     return pd.read_csv("inputs/train.csv")
@@ -29,8 +30,6 @@ def get_train_data():
 def get_test_data():
     return pd.read_csv("inputs/test.csv")
 
-# ft_df = pd.read_csv("inputs/features_test.csv")
-    
 SAFE_DIV = 0.0001 
 STOP_WORDS = stopwords.words("english")
 
@@ -116,6 +115,8 @@ def get_token_features(q1, q2):
 
 def extract_features(qp_df):
     # preprocessing each question
+    log = logging.getLogger("qp_similarity.features.extract_features")
+    log.info("Extracting features")
     qp_df["question1"] = qp_df["question1"].fillna("").apply(preprocess)
     qp_df["question2"] = qp_df["question2"].fillna("").apply(preprocess)
     qp_df['q1len']         = qp_df['question1'].str.len() 
@@ -125,8 +126,9 @@ def extract_features(qp_df):
     qp_df['word_Common']   = qp_df.apply(normalized_word_Common, axis=1)
     qp_df['word_Total']    = qp_df.apply(normalized_word_Total, axis=1)
     qp_df['word_share']    = qp_df.apply(normalized_word_share, axis=1)
-    logging.info("token features...")
-    token_features = qp_df.apply(lambda x: get_token_features(x["question1"], x["question2"]), axis=1)
+    log.info("Computing token features...")
+    token_features = qp_df.apply(lambda x: get_token_features(x["question1"],
+                                                         x["question2"]), axis=1)
     qp_df["cwc_min"]       = list(map(lambda x: x[0], token_features))
     qp_df["cwc_max"]       = list(map(lambda x: x[1], token_features))
     qp_df["csc_min"]       = list(map(lambda x: x[2], token_features))
@@ -137,49 +139,49 @@ def extract_features(qp_df):
     qp_df["first_word_eq"] = list(map(lambda x: x[7], token_features))
     qp_df["abs_len_diff"]  = list(map(lambda x: x[8], token_features))
     qp_df["mean_len"]      = list(map(lambda x: x[9], token_features))
-    logging.info("Computing fuzzy features")
-    qp_df["token_set_ratio"]       = qp_df.apply(lambda x: fuzz.token_set_ratio(x["question1"], x["question2"]), axis=1)
-    qp_df["token_sort_ratio"]      = qp_df.apply(lambda x: fuzz.token_sort_ratio(x["question1"], x["question2"]), axis=1)
-    qp_df["fuzz_ratio"]            = qp_df.apply(lambda x: fuzz.QRatio(x["question1"], x["question2"]), axis=1)
-    qp_df["fuzz_partial_ratio"]    = qp_df.apply(lambda x: fuzz.partial_ratio(x["question1"], x["question2"]), axis=1)
+    log.info("Computing fuzzy features")
+    qp_df["token_set_ratio"]       = qp_df.apply(lambda x: fuzz.token_set_ratio(
+                                                    x["question1"], x["question2"]), axis=1)
+    qp_df["token_sort_ratio"]      = qp_df.apply(lambda x: fuzz.token_sort_ratio(
+                                                    x["question1"], x["question2"]), axis=1)
+    qp_df["fuzz_ratio"]            = qp_df.apply(lambda x: fuzz.QRatio(
+                                                    x["question1"], x["question2"]), axis=1)
+    qp_df["fuzz_partial_ratio"]    = qp_df.apply(lambda x: fuzz.partial_ratio(
+                                                    x["question1"], x["question2"]), axis=1)
     return qp_df
 
 def train(df):
-
-    # qp_df = extract_features(df)
-    qp_df = ft_df
+    log = logging.getLogger("qp_similarity.features.train")    
+    qp_df = extract_features(df)
     y_true = qp_df['is_duplicate']
-    qp_df.drop(['id','qid1', 'qid2', 'question1', 'question2','is_duplicate'], axis=1, inplace=True)
-    X_train, X_test, y_train, y_test = train_test_split(qp_df, y_true, stratify=y_true, test_size=0.3,random_state=43)    
-    logging.info("X_train shape: {}, X_test shape:{}".format(X_train.shape, X_test.shape))
+    qp_df.drop(['id','qid1', 'qid2', 'question1', 'question2','is_duplicate'],  
+                                                            axis=1, inplace=True)
+    X_train, X_test, y_train, y_test = train_test_split(qp_df, y_true, 
+                                       stratify=y_true, test_size=0.3,random_state=43)    
+    log.info("X_train shape: {}, X_test shape:{}".format(X_train.shape, X_test.shape))
     clf = xgb.XGBClassifier(max_depth=3,learning_rate=0.02,n_estimators=400,n_jobs=-1)
+    log.info("Training")
     clf.fit(X_train,y_train)    
     pickle.dump(clf,open("model/xgb_model1.pkl","wb"))
     predict_y = clf.predict_proba(X_test)
-    logging.info("The test log loss is:",log_loss(y_test, predict_y, eps=1e-15))
+    log.info("The log loss is:",log_loss(y_test, predict_y, eps=1e-15))
 
 def predict(df, clf):
-
     qp_df = df[['question1', 'question2']]
-    print("predict extract")
     qp_df = extract_features(qp_df)    
     qp_df.drop(['question1', 'question2'], axis=1, inplace=True)
-    print(qp_df.iloc[0])
     predict_y = clf.predict_proba(qp_df)
     predicted_y =np.argmax(predict_y,axis=1)
     df['duplicate_pred'] = predicted_y
     return df
 
-
 def app_predict(df, clf):
+    log = logging.getLogger("qp_similarity.features.app_predict")        
     qp_df = df[['question1', 'question2']]
-    print("predict extract")
-    qp_df = extract_features(qp_df)    
-    print("done extracting")
+    qp_df = extract_features(qp_df)  
     qp_df.drop(['question1', 'question2'], axis=1, inplace=True)
+    log.info("Predict is_duplicate")
     predict_y = clf.predict_proba(qp_df)
-    print("done predicting: ", predict_y)
     predicted_y =np.argmax(predict_y,axis=1)
-    print("out:", predicted_y)
     return predicted_y
   

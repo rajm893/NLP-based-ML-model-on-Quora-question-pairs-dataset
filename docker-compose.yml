@@ -1,0 +1,13 @@
+version: '3'
+services:
+  qp_similarity_app:
+    image: qp_similarity_app
+    container_name: qp_similarity_container
+    build:
+      context: .
+      dockerfile: Dockerfile 
+    ports:
+      - "8212:8212"
+    volumes:
+      - .:/app
+    

@@ -18,11 +18,11 @@ def predict_score(data:FeatureMeta):
         1 : is a duplicate question
         0 : not a duplicate question
     '''
-    print("Entered")
+    log = logging.getLogger("qp_similarity.predict_score")
     data = data.dict()
-    print("its done")
     test_data = pd.DataFrame({'question1': [data['question1']], 'question2': [data['question1']]})
     res = app_predict(test_data, model)    
+    log.info("predicted result")
     output = {'is_duplicate': str(res[0])}
     return output
 

@@ -12,9 +12,11 @@ log.addHandler(fh)
 log.info("Program started")
 
 if __name__ == "__main__":
+    log = logging.getLogger("qp_similarity.main")
     if os.path.exists("model/xgb_model1.pkl"):
         test_data = get_test_data()
         model = pickle.load(open('model/xgb_model1.pkl', 'rb'))
+        log.info("Model loaded..")
         df = predict(test_data, model)
         df.to_csv("outputs/test_prediction.csv", index=False)
     else:
