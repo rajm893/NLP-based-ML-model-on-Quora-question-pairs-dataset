@@ -1,4 +1,4 @@
-# NLP-Based Question Pairs Similarity Prediction 📚🔍
+# Building NLP based ML-model on Kaggle's Question-pairs dataset using FastAPI and Docker 📚🔍
 
 ## Project Overview 📋
 
@@ -57,7 +57,7 @@ Alternatively, open a web browser and access `http://0.0.0.0:8212/docs` (FastAPI
 **Production**:
 - The choice of deployment method depends on project requirements:
    - Google App Engine for rapid scaling and serverless management.
-   - Server instances for budget-conscious projects.
+   - Server instances for budget-conscious projects.=p
    - Google Compute Engine for cost-effective deployment with monitoring using cloud scheduler and cloud functions.
    - Kubernetes with Kubeflow for an automated, scalable, and monitored solution.
    
